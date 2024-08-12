@@ -3,9 +3,10 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const qs = require('qs');
 
 const app = express();
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5002;
 
 app.use(cors());
 app.use(express.json());
@@ -36,19 +37,54 @@ app.get('/auth/upstox', (req, res) => {
 });
 
 // Handle Upstox callback
+// app.get('/auth/callback', async (req, res) => {
+//     const code = req.query.code;
+//     const tokenUrl = 'https://api.upstox.com/v2/login/authorization/token';
+
+//     try {
+//         const response = await axios.post(tokenUrl, null, {
+//             params: {
+//                 grant_type: 'authorization_code',
+//                 code: code,
+//                 redirect_uri: process.env.REDIRECT_URI,
+//                 client_id: process.env.CLIENT_ID,
+//                 client_secret: process.env.CLIENT_SECRET,
+//             },
+//         });
+
+//         const { access_token, refresh_token, expires_in } = response.data;
+//         const expiresAt = new Date(Date.now() + expires_in * 1000);
+
+//         // Store tokens in the database
+//         const tokenDoc = new Token({ accessToken: access_token, refreshToken: refresh_token, expiresAt });
+//         await tokenDoc.save();
+
+//         res.json({
+//             access_token,
+//             refresh_token,
+//             expires_in,
+//         });
+//     } catch (error) {
+//         res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { error: 'An error occurred' });
+//     }
+// });
+
+
 app.get('/auth/callback', async (req, res) => {
     const code = req.query.code;
-    const tokenUrl = 'https://api.upstox.com/index/oauth/token';
+    const tokenUrl = 'https://api.upstox.com/v2/login/authorization/token';
 
     try {
-        const response = await axios.post(tokenUrl, null, {
-            params: {
-                grant_type: 'authorization_code',
-                code: code,
-                redirect_uri: process.env.REDIRECT_URI,
-                client_id: process.env.CLIENT_ID,
-                client_secret: process.env.CLIENT_SECRET,
-            },
+        const response = await axios.post(tokenUrl, qs.stringify({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: process.env.REDIRECT_URI,
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+        }), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
         });
 
         const { access_token, refresh_token, expires_in } = response.data;
